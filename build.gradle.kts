@@ -41,6 +41,8 @@ dependencies {
     modImplementation("net.fabricmc:fabric-language-kotlin:${project.property("kotlin_loader_version")}")
 
     modImplementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
+
+//    implementation("net.fabricmc.fabric-api:fabric-key-binding-api-v1:1.0.47+0af3f5a78b")
 }
 
 tasks.processResources {

@@ -3,50 +3,66 @@ package net.Mirik9724.mouselock.client
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
-import net.minecraft.client.option.KeyBinding
-import net.minecraft.client.util.InputUtil
 import org.lwjgl.glfw.GLFW
+import org.lwjgl.glfw.GLFW.glfwSetCursorPos
+import org.lwjgl.glfw.GLFW.glfwGetCursorPos
+import org.lwjgl.glfw.GLFW.glfwSetInputMode
+import org.lwjgl.glfw.GLFW.GLFW_CURSOR
+import org.lwjgl.glfw.GLFW.GLFW_CURSOR_DISABLED
 import org.slf4j.LoggerFactory
+import net.minecraft.client.util.InputUtil
+import net.fabricmc.api.EnvType
+import net.fabricmc.api.Environment
+import net.minecraft.client.option.KeyBinding
 
 class MouseLockClient : ClientModInitializer {
 
     private lateinit var toggleKey: KeyBinding
     private var isLocked = false
-    private var lockedYaw = 0f
-    private var lockedPitch = 0f
+    private var lockedX = 0.0
+    private var lockedY = 0.0
 
-    val log = LoggerFactory.getLogger("MouseLock");
+    private val log = LoggerFactory.getLogger("MouseLock")
 
+    @Environment(EnvType.CLIENT)
     override fun onInitializeClient() {
-        log.info("Mod ON")
+        log.info("MouseLock Mod ON")
 
         toggleKey = KeyBindingHelper.registerKeyBinding(
             KeyBinding(
                 "key.mouselock.toggle",
                 InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_L,
+                GLFW.GLFW_KEY_O,
                 "category.mouselock.main"
             )
         )
 
         ClientTickEvents.END_CLIENT_TICK.register { client ->
-            while (toggleKey.wasPressed()) {
+            if (toggleKey.wasPressed()) {
                 isLocked = !isLocked
-                if (isLocked && client.player != null) {
-                    lockedYaw = client.player!!.yaw
-                    lockedPitch = client.player!!.pitch
-                    client.mouse.unlockCursor()
-                    log.info("Mouse - lock")
+
+                val window = client.window.handle
+
+                if (isLocked) {
+                    val x = DoubleArray(1)
+                    val y = DoubleArray(1)
+                    glfwGetCursorPos(window, x, y)
+                    lockedX = x[0]
+                    lockedY = y[0]
+
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
+                    log.info("Mouse locked")
                 } else {
-                    client.mouse.lockCursor()
-                    log.info("Mouse - unlock")
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
+                    log.info("Mouse unlocked")
                 }
             }
 
-            if (isLocked && client.player != null) {
-                client.player!!.yaw = lockedYaw
-                client.player!!.pitch = lockedPitch
+            if (isLocked) {
+                val window = client.window.handle
+                glfwSetCursorPos(window, lockedX, lockedY)
             }
         }
     }
 }
+
