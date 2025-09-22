@@ -13,7 +13,12 @@ import org.slf4j.LoggerFactory
 import net.minecraft.client.util.InputUtil
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.minecraft.client.option.KeyBinding
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback
+import net.minecraft.client.MinecraftClient
+import net.minecraft.client.gui.DrawContext
+import net.minecraft.text.Text
 
 class MouseLockClient : ClientModInitializer {
 
@@ -38,31 +43,50 @@ class MouseLockClient : ClientModInitializer {
         )
 
         ClientTickEvents.END_CLIENT_TICK.register { client ->
+            val window = client.window.handle
+
+            // переключение состояния
             if (toggleKey.wasPressed()) {
                 isLocked = !isLocked
-
-                val window = client.window.handle
-
-                if (isLocked) {
+                if (isLocked && client.currentScreen == null) {
                     val x = DoubleArray(1)
                     val y = DoubleArray(1)
                     glfwGetCursorPos(window, x, y)
                     lockedX = x[0]
                     lockedY = y[0]
-
                     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
                     log.info("Mouse locked")
                 } else {
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
                     log.info("Mouse unlocked")
                 }
             }
 
-            if (isLocked) {
-                val window = client.window.handle
+            if (isLocked && client.currentScreen == null) {
                 glfwSetCursorPos(window, lockedX, lockedY)
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
+            } else if (!isLocked || client.currentScreen != null) {
             }
         }
+        HudRenderCallback.EVENT.register(HudRenderCallback { context: DrawContext, tickDelta: Float ->
+            if (isLocked) {
+                val client = MinecraftClient.getInstance()
+                context.drawText(
+                    client.textRenderer,
+                    Text.translatable("key.mouselock.locked"),
+                    10,
+                    10,
+                    0xFFFFFF,
+                    true
+                )
+            }
+        })
+        ClientPlayConnectionEvents.DISCONNECT.register { handler, client ->
+            resetMouseLock()
+        }
+    }
+
+    private fun resetMouseLock() {
+        isLocked = false
+        log.info("Mouse unlocked due to disconnect/world unload")
     }
 }
-

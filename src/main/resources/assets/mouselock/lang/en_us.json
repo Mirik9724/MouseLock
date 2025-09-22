@@ -1,4 +1,5 @@
 {
   "category.mouselock.main": "MouseLock",
-  "key.mouselock.toggle": "Key to toggle mouse lock"
+  "key.mouselock.toggle": "Key to toggle mouse lock",
+  "key.mouselock.locked": "Mouse Locked"
 }
